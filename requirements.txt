@@ -1,0 +1,17 @@
+# Core document processing dependencies
+pymupdf
+sentence-transformers
+torch
+nltk
+scipy
+numpy
+
+# FastAPI and web server dependencies
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# Additional utilities
+pyyaml
+python-jose[cryptography]

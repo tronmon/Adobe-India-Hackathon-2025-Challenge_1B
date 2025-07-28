@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuMind AI - Persona-Driven Document Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">DocuMind AI</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if analyzer_loaded %}
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
+                            <i class="fas fa-check-circle"></i> AI Ready
+                        </span>
+                    {% else %}
+                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">
+                            <i class="fas fa-clock"></i> Loading AI...
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Persona-Driven Document Intelligence</h1>
+            <p class="text-xl text-gray-600 mb-8">Upload your documents and get AI-powered analysis tailored to your specific role and objectives</p>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <form id="uploadForm" class="space-y-6">
+                <!-- PDF Upload Section -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <div class="text-center">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Upload your PDF documents</h3>
+                        <p class="text-gray-500 mb-4">Drag and drop your files here or click to browse (Upload multiple PDFs)</p>
+                        <input type="file" id="pdfFiles" name="files" multiple accept=".pdf" class="hidden">
+                        <button type="button" onclick="document.getElementById('pdfFiles').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-upload mr-2"></i>Choose Files
+                        </button>
+                        <div id="fileList" class="mt-4 text-left"></div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900">Select Configuration Method</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="config_type" value="plain-text" checked class="mr-2">
+                                <span>Manual Input (Persona & Job)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="config_type" value="json-file" class="mr-2">
+                                <span>JSON Configuration File</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="config_type" value="yaml-file" class="mr-2">
+                                <span>YAML Configuration File</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Configuration Input -->
+                    <div id="configInputs" class="space-y-4">
+                        <!-- Plain text inputs (default) -->
+                        <div id="plainTextInputs" class="space-y-4">
+                            <div>
+                                <label for="persona" class="block text-sm font-medium text-gray-700 mb-1">Persona/Role</label>
+                                <input type="text" id="persona" name="persona" placeholder="e.g., Research Analyst, Student, Manager" class="w-full p-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label for="job_to_be_done" class="block text-sm font-medium text-gray-700 mb-1">Job to be Done</label>
+                                <input type="text" id="job_to_be_done" name="job_to_be_done" placeholder="e.g., prepare literature review, analyze market trends" class="w-full p-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <!-- File upload inputs (hidden by default) -->
+                        <div id="jsonFileInput" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">JSON Configuration File</label>
+                            <input type="file" id="jsonConfigFile" name="config_file" accept=".json" class="w-full p-2 border border-gray-300 rounded-lg">
+                            <p class="text-xs text-gray-500 mt-1">or click to browse</p>
+                        </div>
+
+                        <div id="yamlFileInput" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">YAML Configuration File</label>
+                            <input type="file" id="yamlConfigFile" name="config_file" accept=".yaml,.yml" class="w-full p-2 border border-gray-300 rounded-lg">
+                            <p class="text-xs text-gray-500 mt-1">or click to browse</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="submit" id="analyzeButton" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <i class="fas fa-magic mr-2"></i>Analyze Documents
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <i class="fas fa-spinner fa-spin text-2xl text-blue-600 mb-2"></i>
+            <p class="text-blue-800">Processing your documents... This may take a few minutes.</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden bg-white rounded-lg shadow-lg p-6">
+            <div class="text-center mb-6">
+                <i class="fas fa-check-circle text-4xl text-green-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Analysis Complete!</h2>
+                <p class="text-gray-600">Your PDF analysis has been completed and results are ready for download.</p>
+            </div>
+            
+            <div id="resultsContent" class="space-y-6">
+                <!-- Results will be populated here -->
+            </div>
+            
+            <div class="text-center mt-6">
+                <button id="downloadResults" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-download mr-2"></i>Download Full Results (JSON)
+                </button>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="grid md:grid-cols-3 gap-8 mt-16">
+            <div class="text-center">
+                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-tie text-2xl text-blue-600"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Persona-Driven Analysis</h3>
+                <p class="text-gray-600">Tailored document analysis based on specific user roles and expertise areas.</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-tasks text-2xl text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Job-to-be-Done Focus</h3>
+                <p class="text-gray-600">Extract and rank content based on concrete tasks and objectives.</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-files text-2xl text-purple-600"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Multi-Document Intelligence</h3>
+                <p class="text-gray-600">Analyze 3-10 related PDFs simultaneously with intelligent cross-referencing.</p>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8 mt-16">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Why DocuMind AI?</h2>
+                <p class="text-lg text-gray-700 mb-8">DocuMind AI revolutionizes document analysis by understanding not just what's in your documents, but what matters to you. Our persona-driven approach ensures that every analysis is tailored to your specific role, expertise, and objectives.</p>
+                <p class="text-gray-600">Whether you're a researcher preparing literature reviews, an analyst studying market reports, or a student preparing for exams, our AI understands your unique perspective and delivers insights that matter most to your success.</p>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
+                    <h3 class="font-semibold mb-2">Upload Documents</h3>
+                    <p class="text-sm text-gray-600">Upload multiple PDF documents. Our system automatically detects and counts your files for processing.</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-green-600 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
+                    <h3 class="font-semibold mb-2">Configure Analysis</h3>
+                    <p class="text-sm text-gray-600">Specify your persona, expertise area, and the specific task requirements through our intuitive interface.</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
+                    <h3 class="font-semibold mb-2">AI Processing</h3>
+                    <p class="text-sm text-gray-600">Our AI analyzes content through your persona's lens, ranking and extracting the most relevant sections.</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-orange-600 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">4</div>
+                    <h3 class="font-semibold mb-2">Get Results</h3>
+                    <p class="text-sm text-gray-600">Receive structured output with ranked sections, refined text, and relevance scores tailored to your needs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let analysisResults = null;
+
+        // Handle configuration type changes
+        document.querySelectorAll('input[name="config_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const plainTextInputs = document.getElementById('plainTextInputs');
+                const jsonFileInput = document.getElementById('jsonFileInput');
+                const yamlFileInput = document.getElementById('yamlFileInput');
+                
+                // Hide all inputs
+                plainTextInputs.classList.add('hidden');
+                jsonFileInput.classList.add('hidden');
+                yamlFileInput.classList.add('hidden');
+                
+                // Show relevant input
+                if (this.value === 'plain-text') {
+                    plainTextInputs.classList.remove('hidden');
+                } else if (this.value === 'json-file') {
+                    jsonFileInput.classList.remove('hidden');
+                } else if (this.value === 'yaml-file') {
+                    yamlFileInput.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Handle file selection display
+        document.getElementById('pdfFiles').addEventListener('change', function() {
+            const fileList = document.getElementById('fileList');
+            const files = this.files;
+            
+            if (files.length > 0) {
+                let html = '<div class="bg-gray-50 p-3 rounded"><h4 class="font-medium mb-2">Selected Files:</h4><ul class="space-y-1">';
+                for (let i = 0; i < files.length; i++) {
+                    html += `<li class="text-sm text-gray-600"><i class="fas fa-file-pdf text-red-500 mr-2"></i>${files[i].name}</li>`;
+                }
+                html += '</ul></div>';
+                fileList.innerHTML = html;
+            } else {
+                fileList.innerHTML = '';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const files = document.getElementById('pdfFiles').files;
+            const configType = document.querySelector('input[name="config_type"]:checked').value;
+            
+            // Validate files
+            if (files.length === 0) {
+                alert('Please select at least one PDF file.');
+                return;
+            }
+            
+            // Add files to form data
+            for (let file of files) {
+                formData.append('files', file);
+            }
+            
+            // Add config type
+            formData.append('config_type', configType);
+            
+            // Add configuration data based on type
+            if (configType === 'plain-text') {
+                const persona = document.getElementById('persona').value;
+                const jobToBeDone = document.getElementById('job_to_be_done').value;
+                
+                if (!persona || !jobToBeDone) {
+                    alert('Please fill in both persona and job-to-be-done fields.');
+                    return;
+                }
+                
+                formData.append('persona', persona);
+                formData.append('job_to_be_done', jobToBeDone);
+            } else if (configType === 'json-file') {
+                const configFile = document.getElementById('jsonConfigFile').files[0];
+                if (!configFile) {
+                    alert('Please select a JSON configuration file.');
+                    return;
+                }
+                formData.append('config_file', configFile);
+            } else if (configType === 'yaml-file') {
+                const configFile = document.getElementById('yamlConfigFile').files[0];
+                if (!configFile) {
+                    alert('Please select a YAML configuration file.');
+                    return;
+                }
+                formData.append('config_file', configFile);
+            }
+            
+            // Show loading indicator
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            document.getElementById('analyzeButton').disabled = true;
+            document.getElementById('resultsSection').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Analysis failed');
+                }
+                
+                const results = await response.json();
+                analysisResults = results;
+                displayResults(results);
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error('Analysis error:', error);
+            } finally {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('analyzeButton').disabled = false;
+            }
+        });
+
+        function displayResults(results) {
+            const resultsContent = document.getElementById('resultsContent');
+            
+            let html = `
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Analysis Summary</h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div><strong>Documents:</strong> ${results.metadata.input_documents.join(', ')}</div>
+                        <div><strong>Persona:</strong> ${results.metadata.persona}</div>
+                        <div><strong>Job to be Done:</strong> ${results.metadata.job_to_be_done}</div>
+                        <div><strong>Sections Extracted:</strong> ${results.metadata.total_sections_extracted}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold mb-4">Top Relevant Sections</h3>
+                    <div class="space-y-3">
+            `;
+            
+            results.extracted_sections.forEach((section, index) => {
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-medium text-gray-900">${section.section_title}</h4>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                                ${section.relevance_score}% relevant
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span class="mr-4">📄 ${section.document}</span>
+                            <span class="mr-4">📑 Page ${section.page_number}</span>
+                            <span>🏆 Rank #${section.importance_rank}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>
+                    <div>
+                        <h3 class="font-semibold mb-4">Subsection Analysis</h3>
+                        <div class="space-y-3">
+            `;
+
+            results.subsection_analysis.forEach((section, index) => {
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-medium text-gray-900">📄 ${section.document}</h4>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span class="mr-4"></span>
+                            <span class="mr-4">${section.refined_text}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>'
+            
+            resultsContent.innerHTML = html;
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Handle download results
+        document.getElementById('downloadResults').addEventListener('click', function() {
+            if (analysisResults) {
+                const dataStr = JSON.stringify(analysisResults, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `docuMind_analysis_${new Date().toISOString().slice(0,10)}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            }
+        });
+    </script>
+</body>
+</html>
+
