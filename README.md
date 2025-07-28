@@ -2,7 +2,7 @@
 
 ## Overview
 
-https://github.com/tronmon/Adobe-India-Hackathon-2025-Challenge_1B/blob/main/assets/demo.mp4
+[![Demo](assets/demo_thumbnail.png)](assets/demo.mp4)
 
 This project implements a system that acts as an intelligent document analyst. Given a collection of PDF documents, a target persona, and a job-to-be-done, the system extracts and ranks the most relevant sections to fulfill the persona’s information needs.
 
